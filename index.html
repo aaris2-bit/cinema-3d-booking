@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineVerse 3D MAX | Ultimate Theater Experience</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Three.js + Controls + Tween -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+</head>
+<body>
+
+  <!-- Top App Navigation -->
+  <header class="app-header">
+    <div class="logo">
+      <i class="fas fa-film"></i> Cine<span>Verse</span> <span class="badge-max">MAX 3D</span>
+    </div>
+
+    <!-- Movie Carousel Picker -->
+    <div class="movie-selector-wrap">
+      <label for="movieSelect"><i class="fas fa-ticket-alt"></i> Movie:</label>
+      <select id="movieSelect">
+        <option value="avatar" data-price="350" data-trailer="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" data-genre="Sci-Fi / Adventure">Avatar: The Way of Water (IMAX 3D) - ₹350</option>
+        <option value="interstellar" data-price="320" data-trailer="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" data-genre="Sci-Fi / Drama">Interstellar (70mm IMAX) - ₹320</option>
+        <option value="dune" data-price="380" data-trailer="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" data-genre="Action / Epic">Dune: Part Two (Dolby Cinema) - ₹380</option>
+        <option value="oppenheimer" data-price="300" data-trailer="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" data-genre="Biographical / History">Oppenheimer (IMAX Laser) - ₹300</option>
+      </select>
+    </div>
+
+    <!-- Date & Showtime Picker -->
+    <div class="date-time-cluster">
+      <div class="date-pills">
+        <button class="date-pill active" data-date="Today">Today</button>
+        <button class="date-pill" data-date="Tomorrow">Tomorrow</button>
+        <button class="date-pill" data-date="Fri, 14 Nov">Fri, 14 Nov</button>
+      </div>
+      <div class="showtime-pills">
+        <button class="time-pill active">04:30 PM</button>
+        <button class="time-pill">07:45 PM</button>
+        <button class="time-pill">10:30 PM</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main 3D Canvas Viewport -->
+  <main class="theater-viewport">
+    <div id="canvas-container"></div>
+
+    <!-- Curved IMAX Cinema Screen HUD & Playback Control -->
+    <div class="screen-hud">
+      <div class="curved-screen-bar"></div>
+      <div class="screen-label-wrap">
+        <span><i class="fas fa-tv"></i> CURVED DUAL-LASER IMAX SCREEN</span>
+        <button id="toggleTrailerBtn" class="trailer-toggle-btn" title="Play / Pause movie trailer on the 3D screen!">
+          <i class="fas fa-play"></i> Play Trailer On 3D Screen
+        </button>
+      </div>
+    </div>
+
+    <!-- View Mode Switcher Floating Controls -->
+    <div class="camera-controls">
+      <button id="viewOverviewBtn" class="cam-btn active" title="Top-down theater view">
+        <i class="fas fa-cube"></i> Auditorium
+      </button>
+      <button id="viewScreenBtn" class="cam-btn" title="Front view of the screen">
+        <i class="fas fa-eye"></i> Screen Center
+      </button>
+      <button id="viewMySeatBtn" class="cam-btn pov-btn" title="First-Person Point of View from your selected seat">
+        <i class="fas fa-chair"></i> My Seat POV (Eyes-On)
+      </button>
+      <button id="viewWalkthroughBtn" class="cam-btn" title="Cinematic camera fly-through tour">
+        <i class="fas fa-video"></i> 3D Flythrough Tour
+      </button>
+      <button id="toggleLightsBtn" class="cam-btn" title="Dim or brighten theater ambient lights">
+        <i class="fas fa-lightbulb"></i> Dim Lights
+      </button>
+      <button id="openFoodDrawerBtn" class="cam-btn snack-btn" title="Order Popcorn, Drinks & Combos">
+        <i class="fas fa-utensils"></i> Snacks & Combos <span id="snackBadge" class="snack-badge">0</span>
+      </button>
+    </div>
+
+    <!-- Quick Audio SFX Mute/Unmute -->
+    <div class="audio-control-hud">
+      <button id="toggleAudioBtn" class="audio-btn" title="Toggle Cinema Ambient Sound Effects">
+        <i class="fas fa-volume-up"></i>
+      </button>
+    </div>
+
+    <!-- Interactive 3D Legend HUD -->
+    <div class="legend-hud">
+      <div class="legend-header"><i class="fas fa-layer-group"></i> SEATING TIERS</div>
+      <div class="legend-item"><span class="seat-dot standard"></span> Standard (₹350)</div>
+      <div class="legend-item"><span class="seat-dot vip"></span> VIP Recliner (₹550)</div>
+      <div class="legend-item"><span class="seat-dot couple"></span> Couple Sofa (₹850)</div>
+      <div class="legend-item"><span class="seat-dot selected"></span> Your Selection</div>
+      <div class="legend-item"><span class="seat-dot booked"></span> Sold Out</div>
+    </div>
+
+    <!-- Seat Tooltip Overlay -->
+    <div id="seatTooltip" class="seat-tooltip">Seat Info</div>
+  </main>
+
+  <!-- Interactive Food & Beverages (Popcorn / Soda) Slide-over Drawer -->
+  <aside id="foodDrawer" class="food-drawer">
+    <div class="food-drawer-header">
+      <h3><i class="fas fa-popcorn"></i> Cinema Concessions</h3>
+      <button id="closeFoodDrawerBtn" class="close-drawer"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="food-items-list">
+      <div class="food-item" data-id="popcorn" data-price="250" data-name="Caramel Gourmet Popcorn (Large)">
+        <div class="food-icon">🍿</div>
+        <div class="food-details">
+          <h4>Caramel Popcorn (L)</h4>
+          <p>Fresh buttery corn with glazed golden caramel</p>
+          <span class="food-price">₹250</span>
+        </div>
+        <div class="food-qty-ctrl">
+          <button class="qty-btn minus">-</button>
+          <span class="qty-val">0</span>
+          <button class="qty-btn plus">+</button>
+        </div>
+      </div>
+
+      <div class="food-item" data-id="nachos" data-price="220" data-name="Crispy Nachos & Hot Cheese">
+        <div class="food-icon">🧀</div>
+        <div class="food-details">
+          <h4>Loaded Nachos</h4>
+          <p>Crispy corn tortilla with warm jalapeño cheese dip</p>
+          <span class="food-price">₹220</span>
+        </div>
+        <div class="food-qty-ctrl">
+          <button class="qty-btn minus">-</button>
+          <span class="qty-val">0</span>
+          <button class="qty-btn plus">+</button>
+        </div>
+      </div>
+
+      <div class="food-item" data-id="coke" data-price="180" data-name="Ice Cold Fountain Coke">
+        <div class="food-icon">🥤</div>
+        <div class="food-details">
+          <h4>Chilled Coca-Cola (L)</h4>
+          <p>Super chilled fountain beverage with ice</p>
+          <span class="food-price">₹180</span>
+        </div>
+        <div class="food-qty-ctrl">
+          <button class="qty-btn minus">-</button>
+          <span class="qty-val">0</span>
+          <button class="qty-btn plus">+</button>
+        </div>
+      </div>
+
+      <div class="food-item" data-id="combo" data-price="499" data-name="IMAX Mega Duo Combo">
+        <div class="food-icon">🎬</div>
+        <div class="food-details">
+          <h4>IMAX Mega Duo Combo</h4>
+          <p>1x Large Popcorn + 2x Drinks + Nachos</p>
+          <span class="food-price highlight">₹499</span>
+        </div>
+        <div class="food-qty-ctrl">
+          <button class="qty-btn minus">-</button>
+          <span class="qty-val">0</span>
+          <button class="qty-btn plus">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="food-drawer-footer">
+      <div class="food-subtotal">Snacks Subtotal: <strong id="foodSubtotal">₹0</strong></div>
+      <button id="applySnacksBtn" class="btn btn-primary btn-full">Done Adding Snacks</button>
+    </div>
+  </aside>
+
+  <!-- Bottom Booking & Checkout Dock -->
+  <footer class="booking-dock">
+    <div class="dock-summary">
+      <div class="summary-col">
+        <span class="label">Seats Selected</span>
+        <div id="selectedSeatsList" class="seats-badges">None selected</div>
+      </div>
+      <div class="summary-col">
+        <span class="label">Auditorium Screen</span>
+        <span id="tierInfo" class="val highlight">Audi 04 (Dual Laser 3D)</span>
+      </div>
+      <div class="summary-col">
+        <span class="label">Snacks & Combos</span>
+        <span id="snackSummary" class="val">₹0</span>
+      </div>
+      <div class="summary-col">
+        <span class="label">Grand Total</span>
+        <span id="totalPrice" class="val price">₹0</span>
+      </div>
+    </div>
+
+    <div class="dock-actions">
+      <button id="clearSelectionBtn" class="btn btn-secondary">
+        <i class="fas fa-trash-alt"></i> Reset
+      </button>
+      <button id="checkoutBtn" class="btn btn-primary" disabled>
+        <span>Proceed To Payment</span>
+        <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Booking Confirmation Modal with 3D Ticket -->
+  <div id="ticketModal" class="modal-backdrop">
+    <div class="modal-card">
+      <button id="closeModalBtn" class="close-modal"><i class="fas fa-times"></i></button>
+
+      <div class="ticket-header">
+        <div class="ticket-brand">CINEVERSE MAX DIGITAL PASS</div>
+        <div class="ticket-status"><i class="fas fa-check-circle"></i> BOOKING CONFIRMED</div>
+      </div>
+
+      <div class="ticket-body">
+        <div class="ticket-movie-title" id="ticketMovie">Avatar: The Way of Water</div>
+        <div class="ticket-meta-grid">
+          <div>
+            <label>Showtime & Date</label>
+            <p id="ticketTime">Today, 07:45 PM</p>
+          </div>
+          <div>
+            <label>Hall / Screen</label>
+            <p>AUDI 04 (IMAX 3D Laser)</p>
+          </div>
+          <div>
+            <label>Seats Booked</label>
+            <p id="ticketSeats" class="neon-seats">F4, F5</p>
+          </div>
+          <div>
+            <label>Food & Snacks</label>
+            <p id="ticketFood">None</p>
+          </div>
+          <div>
+            <label>Booking ID</label>
+            <p class="neon-id">CNV-8942-2026</p>
+          </div>
+          <div>
+            <label>Total Paid</label>
+            <p id="ticketPrice" class="neon-price">₹700</p>
+          </div>
+        </div>
+
+        <div class="barcode-wrap">
+          <div class="barcode-lines"></div>
+          <p class="barcode-code">SCAN AT THEATER ENTRANCE GATES</p>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <button id="downloadTicketBtn" class="btn btn-primary btn-full">
+          <i class="fas fa-download"></i> Download / Print Digital Ticket
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Video Element for 3D Cinema Screen Video Projection -->
+  <video id="cinemaVideo" loop crossOrigin="anonymous" playsinline style="display:none;">
+    <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4" />
+  </video>
+
+  <script src="script.js"></script>
+</body>
+</html>
